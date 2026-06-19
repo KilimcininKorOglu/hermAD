@@ -57,6 +57,7 @@ func New(cfgMgr *config.Manager, st *store.Store, bundle *i18n.Bundle, tmplFS, s
 // Handler returns the fully wired HTTP handler.
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
+	mux.HandleFunc("GET /healthz", s.health)
 	mux.HandleFunc("GET /", s.dashboard)
 	mux.HandleFunc("GET /partials/servers", s.partialServers)
 	mux.HandleFunc("POST /actions/protection", s.actionProtection)
@@ -127,7 +128,15 @@ func (s *Server) withAuth(next http.Handler) http.Handler {
 }
 
 func isPublicPath(p string) bool {
-	return p == "/login" || strings.HasPrefix(p, "/static/") || strings.HasPrefix(p, "/lang/")
+	return p == "/login" || p == "/healthz" || strings.HasPrefix(p, "/static/") || strings.HasPrefix(p, "/lang/")
+}
+
+// health is an unauthenticated liveness probe used by container/orchestrator
+// health checks.
+func (s *Server) health(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte("ok"))
 }
 
 // lang returns the resolved language for the request.
