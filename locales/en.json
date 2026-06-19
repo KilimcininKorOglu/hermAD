@@ -39,7 +39,7 @@
   "sync.backup_to_master": "Backup → Master",
   "sync.copies_m_b": "Copies Master settings to Backup",
   "sync.copies_b_m": "Copies Backup settings to Master",
-  "sync.download_backup": "Download JSON Backup",
+  "sync.download_backup": "Download Uptime Data (JSON)",
   "sync.confirm_m_b": "Master rules will be written to Backup. Are you sure?",
   "sync.confirm_b_m": "Backup rules will be written to Master. Are you sure?",
 

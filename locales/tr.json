@@ -39,7 +39,7 @@
   "sync.backup_to_master": "Backup → Master",
   "sync.copies_m_b": "Master ayarlarını Backup'a kopyalar",
   "sync.copies_b_m": "Backup ayarlarını Master'a kopyalar",
-  "sync.download_backup": "JSON Yedeğini İndir",
+  "sync.download_backup": "Uptime Verisini İndir (JSON)",
   "sync.confirm_m_b": "Master kuralları Backup'a yazılacak. Emin misiniz?",
   "sync.confirm_b_m": "Backup kuralları Master'a yazılacak. Emin misiniz?",
 
