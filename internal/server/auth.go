@@ -175,10 +175,14 @@ func (s *Server) validSession(r *http.Request) bool {
 	return hmac.Equal([]byte(sig), []byte(s.sign(exp)))
 }
 
-// sign returns the hex HMAC-SHA256 of msg under the server secret.
+// sign returns the hex HMAC-SHA256 of msg under the server secret, bound to the
+// current panel password. Mixing in the password means changing it invalidates
+// every previously issued session token.
 func (s *Server) sign(msg string) string {
 	mac := hmac.New(sha256.New, s.secret)
 	mac.Write([]byte(msg))
+	mac.Write([]byte{0})
+	mac.Write([]byte(s.cfg.Get().PanelPass))
 	return hex.EncodeToString(mac.Sum(nil))
 }
 
