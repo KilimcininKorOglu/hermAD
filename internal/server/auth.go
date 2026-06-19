@@ -114,7 +114,7 @@ func (s *Server) loginSubmit(w http.ResponseWriter, r *http.Request) {
 	pass := r.FormValue("login_pass")
 	if constEqual(user, cfg.PanelUser) && constEqual(pass, cfg.PanelPass) {
 		s.limiter.reset(ip)
-		s.issueSession(w)
+		s.issueSession(w, r)
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
@@ -148,14 +148,23 @@ func (s *Server) setLang(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, dest, http.StatusSeeOther)
 }
 
-// issueSession sets a signed session cookie valid for sessionTTL.
-func (s *Server) issueSession(w http.ResponseWriter) {
+// issueSession sets a signed session cookie valid for sessionTTL. The Secure
+// flag is set when the request arrived over HTTPS (directly or via a
+// TLS-terminating proxy) so the cookie is not exposed on a cleartext hop.
+func (s *Server) issueSession(w http.ResponseWriter, r *http.Request) {
 	exp := strconv.FormatInt(time.Now().Add(sessionTTL).Unix(), 10)
 	value := exp + "." + s.sign(exp)
 	http.SetCookie(w, &http.Cookie{
 		Name: sessionCookie, Value: value, Path: "/",
 		Expires: time.Now().Add(sessionTTL), HttpOnly: true, SameSite: http.SameSiteLaxMode,
+		Secure: isSecureRequest(r),
 	})
+}
+
+// isSecureRequest reports whether the request reached the server over HTTPS,
+// either directly or via a TLS-terminating proxy that set X-Forwarded-Proto.
+func isSecureRequest(r *http.Request) bool {
+	return r.TLS != nil || strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https")
 }
 
 // validSession reports whether the request carries a valid, unexpired session.
