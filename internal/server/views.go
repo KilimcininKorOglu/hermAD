@@ -91,37 +91,46 @@ func (s *Server) buildServerView(cfg *config.Config, key string) serverView {
 		NumQueries: "0", NumBlocked: "0", BlockedPercent: "0.00", AvgLatencyMs: "0.00",
 	}
 
-	if st, err := s.ag.Status(srv); err == nil {
-		v.Reachable = true
-		v.Up = st.Running
-		v.ProtectionOn = st.ProtectionEnabled
-		if !st.ProtectionEnabled {
-			if d := st.Remaining(); d > 0 {
-				v.PausedRemain = fmtDuration(d)
+	// The three control-API calls are independent and each writes a disjoint set
+	// of fields on v, so they run concurrently to bound a single server view at
+	// one request timeout instead of three.
+	var wg sync.WaitGroup
+	wg.Go(func() {
+		if st, err := s.ag.Status(srv); err == nil {
+			v.Reachable = true
+			v.Up = st.Running
+			v.ProtectionOn = st.ProtectionEnabled
+			if !st.ProtectionEnabled {
+				if d := st.Remaining(); d > 0 {
+					v.PausedRemain = fmtDuration(d)
+				}
 			}
 		}
-	}
-
-	if stats, err := s.ag.Stats(srv); err == nil {
-		v.NumQueries = fmtInt(stats.NumDNSQueries)
-		v.NumBlocked = fmtInt(stats.NumBlockedFiltering)
-		pct := 0.0
-		if stats.NumDNSQueries > 0 {
-			pct = float64(stats.NumBlockedFiltering) / float64(stats.NumDNSQueries) * 100
+	})
+	wg.Go(func() {
+		if stats, err := s.ag.Stats(srv); err == nil {
+			v.NumQueries = fmtInt(stats.NumDNSQueries)
+			v.NumBlocked = fmtInt(stats.NumBlockedFiltering)
+			pct := 0.0
+			if stats.NumDNSQueries > 0 {
+				pct = float64(stats.NumBlockedFiltering) / float64(stats.NumDNSQueries) * 100
+			}
+			v.BlockedPercent = fmt.Sprintf("%.2f", pct)
+			v.AvgLatencyMs = fmt.Sprintf("%.2f", stats.AvgProcessingTime*1000)
+			if len(stats.DNSQueries) > 0 {
+				v.HasChart = true
+				v.ChartQueries, v.ChartBlocked = buildChart(stats.DNSQueries, stats.BlockedFiltering)
+			}
 		}
-		v.BlockedPercent = fmt.Sprintf("%.2f", pct)
-		v.AvgLatencyMs = fmt.Sprintf("%.2f", stats.AvgProcessingTime*1000)
-		if len(stats.DNSQueries) > 0 {
-			v.HasChart = true
-			v.ChartQueries, v.ChartBlocked = buildChart(stats.DNSQueries, stats.BlockedFiltering)
+	})
+	wg.Go(func() {
+		if f, err := s.ag.Filtering(srv); err == nil {
+			domains := whitelistDomains(f.UserRules)
+			v.DomainText = strings.Join(domains, "\n")
+			v.RuleCount = len(domains)
 		}
-	}
-
-	if f, err := s.ag.Filtering(srv); err == nil {
-		domains := whitelistDomains(f.UserRules)
-		v.DomainText = strings.Join(domains, "\n")
-		v.RuleCount = len(domains)
-	}
+	})
+	wg.Wait()
 	return v
 }
 
