@@ -1,6 +1,7 @@
 package server
 
 import (
+	"log"
 	"net/http"
 	"slices"
 	"strconv"
@@ -86,6 +87,7 @@ func (s *Server) actionProtection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
+		log.Printf("protection %q on %q: %v", r.FormValue("protection_action"), key, err)
 		s.toast(w, r, "err", "msg.error")
 		return
 	}
@@ -104,10 +106,12 @@ func (s *Server) actionWhitelist(w http.ResponseWriter, r *http.Request) {
 	srv := toAG(cfg.Servers[key])
 	current, err := s.ag.Filtering(srv)
 	if err != nil {
+		log.Printf("whitelist read %q: %v", key, err)
 		s.toast(w, r, "err", "msg.whitelist_failed")
 		return
 	}
 	if err := s.ag.SetRules(srv, mergeWhitelist(current.UserRules, r.FormValue("whitelist_data"))); err != nil {
+		log.Printf("whitelist write %q: %v", key, err)
 		s.toast(w, r, "err", "msg.whitelist_failed")
 		return
 	}
@@ -123,6 +127,7 @@ func (s *Server) actionSync(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := s.runSync(cfg, r.FormValue("direction"), false); err != nil {
+		log.Printf("manual sync %q: %v", r.FormValue("direction"), err)
 		s.toast(w, r, "err", "msg.sync_failed")
 		return
 	}

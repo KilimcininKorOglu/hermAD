@@ -1,6 +1,7 @@
 package server
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -50,6 +51,7 @@ func (s *Server) adminPage(w http.ResponseWriter, r *http.Request) {
 // fields left blank keep their stored values.
 func (s *Server) adminSave(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
+		log.Printf("admin parse form: %v", err)
 		s.toast(w, r, "err", "msg.error")
 		return
 	}
@@ -84,6 +86,7 @@ func (s *Server) adminSave(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := s.cfg.Save(n); err != nil {
+		log.Printf("admin save: %v", err)
 		s.toast(w, r, "err", "msg.error")
 		return
 	}

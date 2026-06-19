@@ -1,6 +1,7 @@
 package server
 
 import (
+	"log"
 	"net"
 	"net/http"
 	"slices"
@@ -230,11 +231,13 @@ func (s *Server) applyToAll(cfg *config.Config, fn func(records []dnsRecord) []d
 		srv := toAG(cfg.Servers[k])
 		cur, err := s.ag.Filtering(srv)
 		if err != nil {
+			log.Printf("dns read %q: %v", k, err)
 			failed = append(failed, cfg.Servers[k].Name)
 			continue
 		}
 		passthrough, records := splitDNS(cur.UserRules)
 		if err := s.ag.SetRules(srv, rebuildRules(passthrough, fn(records))); err != nil {
+			log.Printf("dns write %q: %v", k, err)
 			failed = append(failed, cfg.Servers[k].Name)
 		}
 	}
