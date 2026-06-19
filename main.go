@@ -7,6 +7,7 @@ import (
 	"context"
 	"crypto/rand"
 	"embed"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -57,6 +58,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("config: %v", err)
 	}
+	if err := ensurePanelPassword(cfgMgr); err != nil {
+		log.Fatalf("panel password: %v", err)
+	}
+
 	st, err := store.New(filepath.Join(dataDir, "data.json"))
 	if err != nil {
 		log.Fatalf("store: %v", err)
@@ -115,6 +120,29 @@ func mustSub(fsys fs.FS, dir string) fs.FS {
 		log.Fatalf("embed sub %q: %v", dir, err)
 	}
 	return sub
+}
+
+// ensurePanelPassword generates and persists a random panel password the first
+// time authentication is enabled without one, logging it once so the operator
+// can sign in. It is a no-op when authentication is disabled or a password is
+// already set, so it never overwrites an operator-chosen password.
+func ensurePanelPassword(m *config.Manager) error {
+	cfg := m.Get()
+	if !cfg.AuthEnabled || cfg.PanelPass != "" {
+		return nil
+	}
+	buf := make([]byte, 12)
+	if _, err := rand.Read(buf); err != nil {
+		return err
+	}
+	pw := hex.EncodeToString(buf)
+	c := cfg.Clone()
+	c.PanelPass = pw
+	if err := m.Save(c); err != nil {
+		return err
+	}
+	log.Printf("generated panel password for user %q: %s (change it on the admin page)", c.PanelUser, pw)
+	return nil
 }
 
 // loadSecret reads the session-signing secret, generating and persisting a new

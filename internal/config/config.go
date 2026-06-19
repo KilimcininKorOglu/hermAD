@@ -53,7 +53,7 @@ func Default() *Config {
 	return &Config{
 		AuthEnabled:          false,
 		PanelUser:            "admin",
-		PanelPass:            "admin123",
+		PanelPass:            "",
 		BackupServer:         true,
 		UptimeRetentionHours: 24,
 		UptimeIntervalMin:    5,
