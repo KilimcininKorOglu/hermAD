@@ -1,0 +1,55 @@
+{{define "content"}}
+<p class="muted small dns-note">{{t .Lang "dns.note"}}</p>
+<div class="dns-toolbar"><button type="button" class="btn on" onclick="dnsAdd()">{{t .Lang "dns.add_record"}}</button></div>
+<div id="dnsservers" hx-get="/partials/dns" hx-trigger="refresh from:body" hx-swap="innerHTML">
+{{template "dns_list" .}}
+</div>
+
+{{if .HasBackup}}
+<section class="panel">
+  <h2 class="section-title">{{t .Lang "dns.sync_center"}}</h2>
+  <p class="muted">{{t .Lang "dns.reconcile_desc"}}</p>
+  <form hx-post="/actions/dns/reconcile" hx-target="#toast" hx-swap="innerHTML" hx-confirm="{{t .Lang "dns.confirm_reconcile"}}">
+    <button class="btn on">{{t .Lang "dns.reconcile"}}</button>
+  </form>
+</section>
+{{end}}
+
+<div id="dns-modal" class="modal" hidden>
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 id="dns-modal-title" data-add="{{t .Lang "dns.modal_add"}}" data-edit="{{t .Lang "dns.modal_edit"}}">{{t .Lang "dns.modal_add"}}</h3>
+      <button type="button" class="modal-x" onclick="dnsCloseModal()" aria-label="{{t .Lang "dns.cancel"}}">×</button>
+    </div>
+    <form id="dns-modal-form" class="modal-body" hx-post="/actions/dns/save" hx-target="#toast" hx-swap="innerHTML">
+      <input type="hidden" name="old_domain">
+      <input type="hidden" name="old_type">
+      <input type="hidden" name="old_value">
+      <label>{{t .Lang "dns.domain"}}<input id="dns-domain" name="domain" required spellcheck="false" placeholder="{{t .Lang "dns.domain_ph"}}"></label>
+      <label>{{t .Lang "dns.type"}}<select id="dns-type" name="type">{{range .Types}}<option value="{{.}}">{{.}}</option>{{end}}</select></label>
+      <div id="dns-fields">
+        <div class="dns-fg" data-type="A"><label>{{t .Lang "dns.f_ipv4"}}<input data-k="a" spellcheck="false" placeholder="192.168.1.50"></label></div>
+        <div class="dns-fg" data-type="AAAA" hidden><label>{{t .Lang "dns.f_ipv6"}}<input data-k="aaaa" spellcheck="false" placeholder="fd00::1"></label></div>
+        <div class="dns-fg" data-type="CNAME" hidden><label>{{t .Lang "dns.f_host"}}<input data-k="cname" spellcheck="false" placeholder="host.home.lab"></label></div>
+        <div class="dns-fg" data-type="PTR" hidden><label>{{t .Lang "dns.f_host"}}<input data-k="ptr" spellcheck="false" placeholder="host.home.lab"></label></div>
+        <div class="dns-fg" data-type="TXT" hidden><label>{{t .Lang "dns.f_text"}}<input data-k="txt" spellcheck="false" placeholder="v=spf1 -all"></label></div>
+        <div class="dns-fg" data-type="MX" hidden>
+          <label>{{t .Lang "dns.f_pref"}}<input data-k="mx-pref" type="number" min="0" placeholder="10"></label>
+          <label>{{t .Lang "dns.f_exchange"}}<input data-k="mx-host" spellcheck="false" placeholder="mail.home.lab"></label>
+        </div>
+        <div class="dns-fg" data-type="SRV" hidden>
+          <label>{{t .Lang "dns.f_prio"}}<input data-k="srv-prio" type="number" min="0" placeholder="10"></label>
+          <label>{{t .Lang "dns.f_weight"}}<input data-k="srv-weight" type="number" min="0" placeholder="60"></label>
+          <label>{{t .Lang "dns.f_port"}}<input data-k="srv-port" type="number" min="0" max="65535" placeholder="8080"></label>
+          <label>{{t .Lang "dns.f_target"}}<input data-k="srv-target" spellcheck="false" placeholder="host.home.lab"></label>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn" onclick="dnsCloseModal()">{{t .Lang "dns.cancel"}}</button>
+        <button type="submit" class="btn on">{{t .Lang "dns.save"}}</button>
+      </div>
+    </form>
+  </div>
+</div>
+<script src="/static/dns.js"></script>
+{{end}}

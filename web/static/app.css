@@ -117,7 +117,7 @@ a { color: var(--green); text-decoration: none; }
 .pause-group { display: flex; }
 .pause-group .btn { border-right: none; }
 
-select, input[type=text], input[type=password], input[type=number], textarea {
+select, input[type=text], input[type=password], input[type=number], input:not([type]), textarea {
   font-family: inherit; font-size: 12px;
   background: var(--surface-2); color: var(--green); border: 1px solid var(--border); padding: 8px 10px;
 }
@@ -129,6 +129,45 @@ textarea { width: 100%; resize: vertical; white-space: pre; }
 .wl { border: 1px solid var(--border); }
 .wl summary { cursor: pointer; padding: 8px 12px; background: var(--surface-2); color: var(--green); font-size: 11px; font-weight: 700; letter-spacing: 1px; }
 .wl form { padding: 12px; display: flex; flex-direction: column; gap: 8px; background: var(--surface); }
+
+/* ---- local dns ---- */
+.dns-note { margin: 0 0 16px; }
+.dns-toolbar { margin-bottom: 16px; }
+.dns-warn { padding: 10px 14px; border: 1px solid var(--red); background: var(--red-dim); color: var(--red); font-size: 12px; font-weight: 700; margin-bottom: 12px; }
+.dns-domains { border: 1px solid var(--border); display: flex; flex-direction: column; gap: 1px; background: var(--border); }
+.dns-group { background: var(--surface); }
+.dns-summary { cursor: pointer; padding: 10px 14px; background: var(--surface-2); display: flex; justify-content: space-between; align-items: center; gap: 8px; list-style: none; }
+.dns-summary::-webkit-details-marker { display: none; }
+.dns-summary::before { content: "+"; color: var(--green-muted); margin-right: 8px; font-weight: 700; }
+.dns-group[open] .dns-summary::before { content: "-"; }
+.dns-dom { flex: 1; font-weight: 700; letter-spacing: 0.5px; color: var(--green); word-break: break-all; }
+.dns-count { font-size: 10px; color: var(--green-muted); border: 1px solid var(--border); padding: 1px 7px; }
+.dns-recs { padding: 4px 14px 10px; display: flex; flex-direction: column; }
+.dns-row { display: flex; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.dns-row:last-child { border-bottom: none; }
+.dns-rhost { width: 130px; color: var(--green); font-weight: 700; word-break: break-all; }
+.dns-rtype { width: 52px; font-weight: 700; color: var(--green-muted); font-size: 11px; }
+.dns-rval { flex: 1; color: var(--green); word-break: break-all; }
+.dns-ract { display: flex; gap: 6px; align-items: center; }
+.dns-del { display: inline; }
+.dns-empty { padding: 14px; }
+.btn.sm { padding: 6px 10px; font-size: 11px; flex-direction: row; }
+
+/* ---- modal ---- */
+.modal { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.82); z-index: 100; display: flex; align-items: flex-start; justify-content: center; padding: 8vh 16px 16px; }
+.modal[hidden] { display: none; }
+.modal-box { background: var(--surface); border: 1px solid var(--green-muted); width: 100%; max-width: 460px; }
+.modal-head { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: var(--surface-2); border-bottom: 1px solid var(--border); }
+.modal-head h3 { margin: 0; font-size: 13px; font-weight: 700; letter-spacing: 1px; text-transform: lowercase; }
+.modal-x { background: none; border: none; color: var(--green-muted); font-size: 20px; line-height: 1; cursor: pointer; font-family: inherit; padding: 0 4px; }
+.modal-x:hover { color: var(--red); }
+.modal-body { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.modal-body > label { display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--green-muted); letter-spacing: 0.5px; }
+.modal-body input, .modal-body select { width: 100%; }
+.dns-fg { display: flex; flex-direction: column; gap: 12px; }
+.dns-fg[hidden] { display: none; }
+.dns-fg > label { display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--green-muted); letter-spacing: 0.5px; }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
 
 /* ---- sync ---- */
 .sync-last { margin: 12px 0; padding: 8px 12px; border: 1px solid var(--border); background: var(--bg); }

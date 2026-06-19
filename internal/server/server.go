@@ -62,6 +62,11 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /actions/protection", s.actionProtection)
 	mux.HandleFunc("POST /actions/whitelist", s.actionWhitelist)
 	mux.HandleFunc("POST /actions/sync", s.actionSync)
+	mux.HandleFunc("GET /dns", s.dnsPage)
+	mux.HandleFunc("GET /partials/dns", s.partialDNS)
+	mux.HandleFunc("POST /actions/dns/save", s.actionDNSSave)
+	mux.HandleFunc("POST /actions/dns/delete", s.actionDNSDelete)
+	mux.HandleFunc("POST /actions/dns/reconcile", s.actionDNSReconcile)
 	mux.HandleFunc("GET /export", s.export)
 	mux.HandleFunc("GET /admin", s.adminPage)
 	mux.HandleFunc("POST /admin", s.adminSave)
@@ -143,6 +148,7 @@ func newRenderer(tmplFS fs.FS, funcs template.FuncMap) (*renderer, error) {
 	r := &renderer{pages: map[string]*template.Template{}}
 	pages := map[string][]string{
 		"dashboard": {"base.html", "dashboard.html"},
+		"dns":       {"base.html", "dns.html"},
 		"admin":     {"base.html", "admin.html"},
 		"login":     {"base.html", "login.html"},
 	}

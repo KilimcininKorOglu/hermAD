@@ -12,6 +12,7 @@
   <a class="brand" href="/">hermAD</a>
   <nav class="nav">
     <a href="/" class="{{if eq .Active "dashboard"}}active{{end}}">{{t .Lang "nav.dashboard"}}</a>
+    <a href="/dns" class="{{if eq .Active "dns"}}active{{end}}">{{t .Lang "nav.dns"}}</a>
     <a href="/admin" class="{{if eq .Active "admin"}}active{{end}}">{{t .Lang "nav.admin"}}</a>
     <span class="langs">{{range .Langs}}<a href="/lang/{{.}}" class="{{if eq $.Lang .}}active{{end}}">{{.}}</a>{{end}}</span>
     {{if .AuthOn}}<a href="/logout" class="danger">{{t .Lang "nav.logout"}}</a>{{end}}

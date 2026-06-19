@@ -1,0 +1,31 @@
+{{define "dns_list"}}
+{{if .Unreachable}}<div class="dns-warn">{{t .Lang "dns.unreachable_warn"}} {{range $i, $n := .Unreachable}}{{if $i}}, {{end}}{{$n}}{{end}}</div>{{end}}
+{{$L := .Lang}}
+<div class="dns-domains">
+{{range .Domains}}
+  <details class="dns-group">
+    <summary class="dns-summary"><span class="dns-dom">{{.Domain}}</span><span class="dns-count">{{len .Records}}</span></summary>
+    <div class="dns-recs">
+      {{range .Records}}
+      <div class="dns-row">
+        <span class="dns-rhost">{{.Host}}</span>
+        <span class="dns-rtype">{{.Type}}</span>
+        <span class="dns-rval">{{.Value}}</span>
+        <span class="dns-ract">
+          <button type="button" class="btn sm" onclick="dnsEdit(this)" data-domain="{{.Domain}}" data-type="{{.Type}}" data-value="{{.Value}}">{{t $L "dns.edit"}}</button>
+          <form class="dns-del" hx-post="/actions/dns/delete" hx-target="#toast" hx-swap="innerHTML" hx-confirm="{{t $L "dns.confirm_delete"}}">
+            <input type="hidden" name="domain" value="{{.Domain}}">
+            <input type="hidden" name="type" value="{{.Type}}">
+            <input type="hidden" name="value" value="{{.Value}}">
+            <button class="btn sm danger" type="submit">{{t $L "dns.delete"}}</button>
+          </form>
+        </span>
+      </div>
+      {{end}}
+    </div>
+  </details>
+{{else}}
+  <div class="muted small dns-empty">{{t $L "dns.no_records"}}</div>
+{{end}}
+</div>
+{{end}}
