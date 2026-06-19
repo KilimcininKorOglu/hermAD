@@ -60,6 +60,11 @@ type Filtering struct {
 	UserRules []string `json:"user_rules"`
 }
 
+// maxResponseBytes caps how much of an AdGuard Home response body is read before
+// JSON decoding, so a compromised or malfunctioning upstream cannot exhaust
+// memory with an oversized payload.
+const maxResponseBytes = 16 << 20
+
 // Client performs AdGuard Home API requests with a bounded timeout.
 type Client struct {
 	hc *http.Client
@@ -86,7 +91,7 @@ func (c *Client) get(srv Server, path string, out any) error {
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("HTTP %d", resp.StatusCode)
 	}
-	return json.NewDecoder(resp.Body).Decode(out)
+	return json.NewDecoder(io.LimitReader(resp.Body, maxResponseBytes)).Decode(out)
 }
 
 func (c *Client) post(srv Server, path string, payload any) error {
