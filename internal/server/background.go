@@ -78,6 +78,12 @@ func (s *Server) runSync(cfg *config.Config, direction string, auto bool) error 
 	if err != nil {
 		return err
 	}
+	// Refuse to push an empty rule set: set_rules overwrites the destination
+	// wholesale, so syncing from a source that returned no rules (e.g. a freshly
+	// reinstalled or misbehaving AdGuard) would silently wipe the other HA copy.
+	if len(filtering.UserRules) == 0 {
+		return fmt.Errorf("refusing to sync %s: source %q returned no rules (would wipe destination)", label, srcKey)
+	}
 	if err := s.ag.SetRules(toAG(cfg.Servers[dstKey]), filtering.UserRules); err != nil {
 		return err
 	}
