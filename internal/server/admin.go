@@ -3,6 +3,7 @@ package server
 import (
 	"log"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 )
@@ -77,6 +78,11 @@ func (s *Server) adminSave(w http.ResponseWriter, r *http.Request) {
 		sc := n.Servers[key]
 		sc.Name = strings.TrimSpace(r.FormValue(key + "_name"))
 		sc.URL = strings.TrimSpace(r.FormValue(key + "_url"))
+		if sc.URL != "" && !validServerURL(sc.URL) {
+			log.Printf("admin save: rejected non-http(s) URL for %q: %q", key, sc.URL)
+			s.toast(w, r, "err", "msg.error")
+			return
+		}
 		sc.Auth = r.FormValue(key+"_auth") == "on"
 		sc.User = strings.TrimSpace(r.FormValue(key + "_user"))
 		if p := r.FormValue(key + "_pass"); p != "" {
@@ -110,6 +116,17 @@ func (s *Server) adminConfigView() *adminConfigView {
 		Master:               serverFormView{Key: "master", Name: master.Name, URL: master.URL, Auth: master.Auth, User: master.User},
 		Backup:               serverFormView{Key: "backup", Name: backup.Name, URL: backup.URL, Auth: backup.Auth, User: backup.User},
 	}
+}
+
+// validServerURL reports whether raw is an http(s) URL with a host — the only
+// schemes the AdGuard client speaks. It deliberately allows private/LAN hosts,
+// since AdGuard instances are normally reached on the local network.
+func validServerURL(raw string) bool {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return false
+	}
+	return (u.Scheme == "http" || u.Scheme == "https") && u.Host != ""
 }
 
 func atoiDefault(s string, def int) int {
