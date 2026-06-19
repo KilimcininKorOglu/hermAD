@@ -8,12 +8,14 @@ RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o /out/hermad .
 
-# ---- production runtime: minimal image, runs the binary ----
+# ---- production runtime: minimal image, runs the binary as a non-root user ----
 FROM alpine:3.20 AS prod
-RUN apk add --no-cache ca-certificates tzdata
+RUN apk add --no-cache ca-certificates tzdata \
+    && addgroup -S hermad && adduser -S -G hermad -u 10001 hermad
 WORKDIR /app
 COPY --from=build /out/hermad /app/hermad
 ENV HERMAD_DATA_DIR=/data HERMAD_LISTEN=:8080
+USER hermad
 EXPOSE 8080
 ENTRYPOINT ["/app/hermad"]
 
