@@ -51,7 +51,7 @@ type Config struct {
 // Default returns the built-in configuration written on first run.
 func Default() *Config {
 	return &Config{
-		AuthEnabled:          false,
+		AuthEnabled:          true,
 		PanelUser:            "admin",
 		PanelPass:            "",
 		BackupServer:         true,
