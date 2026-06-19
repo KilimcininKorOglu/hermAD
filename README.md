@@ -3,23 +3,40 @@
 A self-hosted dashboard for managing AdGuard Home instances. It supports High
 Availability setups (Master/Backup) and single-server mode, and is written in Go
 with an HTMX-driven frontend. The entire application ships as a single static
-binary with embedded templates, assets, and locale bundles.
+binary with embedded templates, assets, and locale bundles, and has no external
+runtime dependencies.
 
 ## Features
 
 - Live dashboard: protection status, latency, query and block counts, and a
   CSS-rendered traffic chart per server (auto-refreshes every 30s).
 - Protection control: enable, disable, or timed-pause (with a live countdown).
+- Local DNS management: create, edit, and delete custom DNS records (A, AAAA,
+  CNAME, MX, TXT, SRV, PTR) for your local domains. Records are managed as a
+  single list, grouped by domain, and applied to every server.
 - Whitelist editor: one domain per line, persisted to AdGuard Home user rules.
   Non-allow rules on the server are preserved untouched.
 - Bidirectional sync (HA mode): Master to Backup and Backup to Master, manual or
-  scheduled (auto-sync).
+  scheduled (auto-sync). A sync will not overwrite a server with an empty rule
+  set.
 - Uptime history: per-server up/down bars, collected by a background worker.
 - Configuration management page: edit servers, authentication, language, uptime,
   and auto-sync at runtime — changes apply live, no restart required.
 - JSON-based localization: Turkish and English, switchable from the UI.
-- Optional panel authentication with signed-cookie sessions.
+- Panel authentication (enabled by default): signed-cookie sessions, a random
+  password generated on first run, and brute-force rate limiting.
 - Single-server mode: set `backup_server` to false to hide all HA and sync UI.
+
+## Local DNS
+
+Custom local DNS records are implemented as AdGuard Home `$dnsrewrite` rules,
+which support all the record types above (unlike the built-in "DNS rewrites"
+feature, limited to A/AAAA/CNAME). In HA mode the two servers are presented as a
+single record set: the list is the union of both servers, grouped by base domain
+(for example `home.lab` with `nas`, `mail`, and other subdomains beneath it), and
+every add, edit, or delete is applied to all servers. A "Sync across all servers"
+action reconciles the servers to the same record set while leaving their other
+rules untouched.
 
 ## Architecture
 
@@ -31,7 +48,8 @@ directory, never in the binary:
 - `internal/adguard` — minimal AdGuard Home control API client
 - `internal/store` — uptime history and last-sync persistence
 - `internal/i18n` — JSON locale bundles
-- `internal/server` — routing, middleware, handlers, and the background ticker
+- `internal/server` — routing, middleware, handlers, local DNS, and the
+  background ticker
 - `web/` — embedded templates and static assets; `locales/` — embedded bundles
 
 ## Configuration
@@ -48,6 +66,21 @@ directly. Environment variables:
 The data directory holds `config.json` (contains credentials), `data.json`
 (uptime and last-sync), and `session.key` (session signing secret). It must be
 writable and must not be committed to version control.
+
+## Security
+
+- Panel authentication is enabled by default. On first run, when no password is
+  set, a random one is generated and printed once to the startup log; change it
+  on the admin page.
+- Failed logins are rate-limited per client IP, with a temporary lockout after
+  repeated failures.
+- Sessions use HMAC-SHA256 signed cookies bound to the current password, so
+  changing the password invalidates existing sessions. The cookie is marked
+  `Secure` when the request is served over HTTPS (set `X-Forwarded-Proto: https`
+  on a TLS-terminating reverse proxy).
+- hermAD serves plain HTTP and is intended to run behind a TLS-terminating proxy.
+- The production container runs as a non-root user, and the Go toolchain is
+  pinned to a patched release to clear known standard-library advisories.
 
 ## Running with Docker
 
@@ -79,16 +112,20 @@ pre-pointed at them via `config.dev.json`. The seed is for development only.
 docker compose -f hermad-prod.yml up --build -d
 ```
 
-Publishes the UI on host port `8160` and persists to `./docker-data`.
+Publishes the UI on host port `8160` and persists to `./docker-data`. The image
+runs as a non-root user and exposes a liveness endpoint at `/healthz`, which the
+container `HEALTHCHECK` polls.
 
 ## Running locally
 
-Requires Go 1.26+.
+Requires Go 1.26+ (the build pins the toolchain to a patched 1.26 release).
 
 ```bash
 go run .
 # build (output goes to ./bin)
 go build -o bin/hermad . && ./bin/hermad
+# run the unit tests
+go test ./...
 ```
 
 The UI is served on `:8080`. The data directory is chosen by the user via
@@ -104,7 +141,8 @@ interval and auto-sync direction/interval on the admin page.
 
 The version lives in the `VERSION` file and is embedded into the binary at build
 time (`go:embed`). Print it with `hermad --version`; it is also shown in the UI
-footer and the startup log. Release a new version by editing `VERSION`.
+footer and the startup log. Releases are recorded in `CHANGELOG.md` and tagged
+`vX.Y.Z`.
 
 ## License
 
