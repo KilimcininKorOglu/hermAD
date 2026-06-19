@@ -30,6 +30,7 @@ type Server struct {
 	static  fs.FS
 	secret  []byte
 	version string
+	limiter *loginLimiter
 }
 
 // New constructs a Server. tmplFS must contain base/page templates and a
@@ -44,6 +45,7 @@ func New(cfgMgr *config.Manager, st *store.Store, bundle *i18n.Bundle, tmplFS, s
 		static:  staticFS,
 		secret:  secret,
 		version: version,
+		limiter: newLoginLimiter(),
 	}
 	funcs := template.FuncMap{"t": bundle.T, "dict": dict}
 	r, err := newRenderer(tmplFS, funcs)

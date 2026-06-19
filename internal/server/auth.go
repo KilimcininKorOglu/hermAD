@@ -5,16 +5,82 @@ import (
 	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/hex"
+	"net"
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
 const (
 	sessionCookie = "hermad_session"
 	sessionTTL    = 12 * time.Hour
+	maxLoginFails = 5
+	loginLockout  = 15 * time.Minute
 )
+
+// loginLimiter throttles repeated failed logins per client IP to slow online
+// brute force. It keeps a small in-memory map guarded by a mutex; expired
+// entries are pruned on each failure so it cannot grow unbounded.
+type loginLimiter struct {
+	mu       sync.Mutex
+	attempts map[string]*loginAttempts
+}
+
+type loginAttempts struct {
+	fails int
+	until time.Time
+}
+
+func newLoginLimiter() *loginLimiter {
+	return &loginLimiter{attempts: map[string]*loginAttempts{}}
+}
+
+// blocked reports whether key is currently locked out.
+func (l *loginLimiter) blocked(key string) bool {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	a := l.attempts[key]
+	return a != nil && a.fails >= maxLoginFails && time.Now().Before(a.until)
+}
+
+// fail records a failed attempt, locking the key once the threshold is reached.
+func (l *loginLimiter) fail(key string) {
+	now := time.Now()
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	for k, a := range l.attempts {
+		if a.fails >= maxLoginFails && now.After(a.until) {
+			delete(l.attempts, k)
+		}
+	}
+	a := l.attempts[key]
+	if a == nil {
+		a = &loginAttempts{}
+		l.attempts[key] = a
+	}
+	a.fails++
+	if a.fails >= maxLoginFails {
+		a.until = now.Add(loginLockout)
+	}
+}
+
+// reset clears a key's failure count after a successful login.
+func (l *loginLimiter) reset(key string) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	delete(l.attempts, key)
+}
+
+// clientIP returns the request's source IP without the port, used as the
+// rate-limit key.
+func clientIP(r *http.Request) string {
+	if host, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
+		return host
+	}
+	return r.RemoteAddr
+}
 
 // loginData is the view model for the login page.
 type loginData struct {
@@ -36,13 +102,23 @@ func (s *Server) loginPage(w http.ResponseWriter, r *http.Request) {
 // loginSubmit verifies the panel credentials and issues a session cookie.
 func (s *Server) loginSubmit(w http.ResponseWriter, r *http.Request) {
 	cfg := s.cfg.Get()
+	ip := clientIP(r)
+	if s.limiter.blocked(ip) {
+		w.WriteHeader(http.StatusTooManyRequests)
+		if err := s.tmpl.page(w, "login", loginData{basePage: s.basePage(r, ""), Error: true}); err != nil {
+			s.fail(w, err)
+		}
+		return
+	}
 	user := r.FormValue("login_user")
 	pass := r.FormValue("login_pass")
 	if constEqual(user, cfg.PanelUser) && constEqual(pass, cfg.PanelPass) {
+		s.limiter.reset(ip)
 		s.issueSession(w)
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
+	s.limiter.fail(ip)
 	w.WriteHeader(http.StatusUnauthorized)
 	if err := s.tmpl.page(w, "login", loginData{basePage: s.basePage(r, ""), Error: true}); err != nil {
 		s.fail(w, err)
