@@ -1,0 +1,39 @@
+{{define "content"}}
+<div id="servers" hx-get="/partials/servers" hx-trigger="every 30s, refresh from:body" hx-swap="innerHTML">
+{{template "servers" .}}
+</div>
+
+{{if .HasBackup}}
+<section class="panel">
+  <h2 class="section-title">{{t .Lang "sync.center"}}</h2>
+  <p class="muted">{{t .Lang "sync.desc"}}</p>
+  <div class="sync-last">{{t .Lang "sync.last_action"}}: <strong>{{if .LastSync}}{{.LastSync}}{{else}}{{t .Lang "sync.not_yet"}}{{end}}</strong></div>
+  <div class="sync-actions">
+    <form hx-post="/actions/sync" hx-target="#toast" hx-swap="innerHTML" hx-confirm="{{t .Lang "sync.confirm_m_b"}}">
+      <input type="hidden" name="direction" value="master_to_backup">
+      <button class="btn">{{t .Lang "sync.master_to_backup"}}<span class="sub">{{t .Lang "sync.copies_m_b"}}</span></button>
+    </form>
+    <form hx-post="/actions/sync" hx-target="#toast" hx-swap="innerHTML" hx-confirm="{{t .Lang "sync.confirm_b_m"}}">
+      <input type="hidden" name="direction" value="backup_to_master">
+      <button class="btn ghost">{{t .Lang "sync.backup_to_master"}}<span class="sub">{{t .Lang "sync.copies_b_m"}}</span></button>
+    </form>
+  </div>
+  <a class="download" href="/export">{{t .Lang "sync.download_backup"}}</a>
+</section>
+{{end}}
+
+{{if .UptimeOn}}
+<section class="panel">
+  <h2 class="section-title">{{t .Lang "uptime.title"}}</h2>
+  <div class="uptime-grid {{if .HasBackup}}cols-2{{else}}cols-1{{end}}">
+  {{range .Uptime}}
+    <div class="uptime-item">
+      <div class="uptime-name">{{.Name}}</div>
+      <div class="uptime-bar" title="{{t $.Lang "uptime.legend"}}">{{range .Segments}}<span class="seg {{if .}}up{{else}}down{{end}}"></span>{{end}}</div>
+      {{if .Empty}}<div class="muted small">{{t $.Lang "uptime.no_history"}}</div>{{end}}
+    </div>
+  {{end}}
+  </div>
+</section>
+{{end}}
+{{end}}

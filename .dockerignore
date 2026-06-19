@@ -1,0 +1,9 @@
+.git/
+docker-data/
+bin/
+tmp/
+docs/
+deploy/
+config.dev.json
+*.md
+.air.toml

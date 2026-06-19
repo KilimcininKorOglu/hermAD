@@ -1,0 +1,20 @@
+name: hermad
+
+# Production stack: builds the static binary image and runs it with the
+# docker-data folder mounted for persistence.
+#   docker compose -f hermad-prod.yml up --build -d
+
+services:
+  app:
+    container_name: hermad-app
+    build:
+      context: .
+      target: prod
+    ports:
+      - "8160:8080"
+    volumes:
+      - ./docker-data:/data
+    environment:
+      HERMAD_DATA_DIR: /data
+      HERMAD_LISTEN: ":8080"
+    restart: unless-stopped

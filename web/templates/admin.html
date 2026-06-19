@@ -1,0 +1,39 @@
+{{define "content"}}{{$L := .Lang}}{{with .Cfg}}
+<form class="admin" hx-post="/admin" hx-target="#toast" hx-swap="innerHTML">
+  <section class="panel">
+    <h2 class="section-title">{{t $L "admin.general"}}</h2>
+    <label class="row check"><input type="checkbox" name="auth_enabled" {{if .AuthEnabled}}checked{{end}}> {{t $L "admin.auth_enabled"}}</label>
+    <label class="row"><span>{{t $L "admin.panel_user"}}</span><input type="text" name="panel_user" value="{{.PanelUser}}"></label>
+    <label class="row"><span>{{t $L "admin.panel_pass"}}</span><input type="password" name="panel_pass" placeholder="{{t $L "admin.leave_blank"}}"></label>
+    <label class="row check"><input type="checkbox" name="backup_server" {{if .BackupServer}}checked{{end}}> {{t $L "admin.backup_server"}}</label>
+    <label class="row"><span>{{t $L "admin.uptime_retention"}}</span><input type="number" name="uptime_retention" value="{{.UptimeRetentionHours}}" min="0"></label>
+    <label class="row"><span>{{t $L "admin.uptime_interval"}}</span><input type="number" name="uptime_interval" value="{{.UptimeIntervalMin}}" min="1"></label>
+    <label class="row"><span>{{t $L "admin.language"}}</span>
+      <select name="language">
+        <option value="tr" {{if eq .Language "tr"}}selected{{end}}>Turkce</option>
+        <option value="en" {{if eq .Language "en"}}selected{{end}}>English</option>
+      </select>
+    </label>
+  </section>
+
+  <section class="panel">
+    <h2 class="section-title">{{t $L "admin.autosync"}}</h2>
+    <label class="row check"><input type="checkbox" name="autosync_enabled" {{if .AutoSyncEnabled}}checked{{end}}> {{t $L "admin.autosync_enabled"}}</label>
+    <label class="row"><span>{{t $L "admin.direction"}}</span>
+      <select name="autosync_direction">
+        <option value="master_to_backup" {{if eq .AutoSyncDirection "master_to_backup"}}selected{{end}}>{{t $L "sync.master_to_backup"}}</option>
+        <option value="backup_to_master" {{if eq .AutoSyncDirection "backup_to_master"}}selected{{end}}>{{t $L "sync.backup_to_master"}}</option>
+      </select>
+    </label>
+    <label class="row"><span>{{t $L "admin.interval_min"}}</span><input type="number" name="autosync_interval" value="{{.AutoSyncInterval}}" min="1"></label>
+  </section>
+
+  <section class="panel">
+    <h2 class="section-title">{{t $L "admin.servers"}}</h2>
+    {{template "server_form" dict "S" .Master "Lang" $L "Title" (t $L "admin.server_master")}}
+    {{template "server_form" dict "S" .Backup "Lang" $L "Title" (t $L "admin.server_backup")}}
+  </section>
+
+  <button class="btn on big" type="submit">{{t $L "admin.save"}}</button>
+</form>
+{{end}}{{end}}

@@ -1,0 +1,3 @@
+{{define "servers"}}<div class="grid {{if .HasBackup}}cols-2{{else}}cols-1{{end}}">
+{{range .Servers}}{{template "server_card" dict "S" . "Lang" $.Lang}}{{end}}
+</div>{{end}}

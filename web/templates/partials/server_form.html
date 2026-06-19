@@ -1,0 +1,11 @@
+{{define "server_form"}}{{$L := .Lang}}{{$title := .Title}}
+<fieldset class="srv-fieldset">
+  <legend>{{$title}}</legend>
+  {{with .S}}
+  <label class="row"><span>{{t $L "admin.name"}}</span><input type="text" name="{{.Key}}_name" value="{{.Name}}"></label>
+  <label class="row"><span>{{t $L "admin.url"}}</span><input type="text" name="{{.Key}}_url" value="{{.URL}}"></label>
+  <label class="row check"><input type="checkbox" name="{{.Key}}_auth" {{if .Auth}}checked{{end}}> {{t $L "admin.auth"}}</label>
+  <label class="row"><span>{{t $L "admin.user"}}</span><input type="text" name="{{.Key}}_user" value="{{.User}}"></label>
+  <label class="row"><span>{{t $L "admin.pass"}}</span><input type="password" name="{{.Key}}_pass" placeholder="{{t $L "admin.leave_blank"}}"></label>
+  {{end}}
+</fieldset>{{end}}

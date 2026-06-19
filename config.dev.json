@@ -1,0 +1,14 @@
+{
+  "auth_enabled": false,
+  "panel_user": "admin",
+  "panel_pass": "admin123",
+  "backup_server": true,
+  "uptime_retention_hours": 24,
+  "uptime_interval_minutes": 1,
+  "language": "tr",
+  "auto_sync": { "enabled": false, "direction": "master_to_backup", "interval_minutes": 60 },
+  "servers": {
+    "master": { "name": "AdGuard Master (dev)", "url": "http://adguard-master", "auth": false, "user": "", "pass": "" },
+    "backup": { "name": "AdGuard Backup (dev)", "url": "http://adguard-backup", "auth": false, "user": "", "pass": "" }
+  }
+}

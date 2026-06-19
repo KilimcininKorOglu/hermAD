@@ -1,0 +1,82 @@
+name: hermad
+
+# Development stack: hermad (live reload via air) plus two AdGuard Home
+# instances so HA features can be exercised locally.
+#   docker compose -f hermad-dev.yml up --build
+#
+# All persistent data lives under ./docker-data (bind mounts, no named volumes):
+#   docker-data/                       hermad config.json, data.json, session.key
+#   docker-data/adguard-master/{conf,work}
+#   docker-data/adguard-backup/{conf,work}
+#
+# The two AdGuard instances are seeded (auth disabled) from deploy/adguard so the
+# control API is reachable on first boot. Open hermad at http://localhost:8160/,
+# the AdGuard UIs at http://localhost:8161/ and http://localhost:8162/.
+
+services:
+  # One-shot: seed each AdGuard conf dir with the dev config if not present.
+  adguard-seed:
+    image: busybox:1.36
+    container_name: hermad-adguard-seed
+    command:
+      - sh
+      - -c
+      - for d in /master /backup; do [ -f $$d/AdGuardHome.yaml ] || cp /seed/AdGuardHome.yaml $$d/AdGuardHome.yaml; done
+    volumes:
+      - ./docker-data/adguard-master/conf:/master
+      - ./docker-data/adguard-backup/conf:/backup
+      - ./deploy/adguard:/seed:ro
+
+  adguard-master:
+    image: adguard/adguardhome:v0.107.77
+    container_name: hermad-adguard-master
+    depends_on:
+      adguard-seed:
+        condition: service_completed_successfully
+    volumes:
+      - ./docker-data/adguard-master/conf:/opt/adguardhome/conf
+      - ./docker-data/adguard-master/work:/opt/adguardhome/work
+    ports:
+      - "8161:80"
+      - "8163:53/tcp"
+      - "8163:53/udp"
+    restart: unless-stopped
+
+  adguard-backup:
+    image: adguard/adguardhome:v0.107.77
+    container_name: hermad-adguard-backup
+    depends_on:
+      adguard-seed:
+        condition: service_completed_successfully
+    volumes:
+      - ./docker-data/adguard-backup/conf:/opt/adguardhome/conf
+      - ./docker-data/adguard-backup/work:/opt/adguardhome/work
+    ports:
+      - "8162:80"
+      - "8164:53/tcp"
+      - "8164:53/udp"
+    restart: unless-stopped
+
+  app:
+    container_name: hermad-dev
+    build:
+      context: .
+      target: dev
+    depends_on:
+      - adguard-master
+      - adguard-backup
+    # Seed hermad's config to point at the two AdGuard containers on first run,
+    # then start the live-reload server.
+    command:
+      - sh
+      - -c
+      - cp -n /src/config.dev.json /data/config.json 2>/dev/null || true; exec air -c .air.toml
+    ports:
+      - "8160:8080"
+    volumes:
+      - ./:/src
+      - ./docker-data:/data
+    environment:
+      HERMAD_DATA_DIR: /data
+      HERMAD_LISTEN: ":8080"
+    restart: unless-stopped

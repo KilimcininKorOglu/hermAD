@@ -1,0 +1,53 @@
+{{define "server_card"}}{{$L := .Lang}}{{with .S}}
+<div class="card">
+  <div class="card-head">
+    <h3 class="card-title">{{.Name}}</h3>
+    <div class="badges">
+      {{if .ProtectionOn}}<span class="badge on">{{t $L "card.protected"}}</span>{{else}}<span class="badge warn">{{t $L "card.paused"}}{{if .PausedRemain}} ({{.PausedRemain}}){{end}}</span>{{end}}
+      {{if .Up}}<span class="badge on">{{t $L "card.status_up"}}</span>{{else}}<span class="badge off">{{t $L "card.status_down"}}</span>{{end}}
+    </div>
+  </div>
+  <div class="card-body">
+    <a class="srv-url" href="{{.URL}}" target="_blank" rel="noopener">{{.URL}}</a>
+    {{if not .Reachable}}<div class="muted small">{{t $L "card.unreachable"}}</div>{{end}}
+    <div class="stats">
+      <div class="stat"><span class="stat-label">{{t $L "card.dns_queries"}}</span><span class="stat-value">{{.NumQueries}}</span></div>
+      <div class="stat"><span class="stat-label">{{t $L "card.blocked"}}</span><span class="stat-value red">{{.NumBlocked}}</span><span class="stat-sub">%{{.BlockedPercent}}</span></div>
+      <div class="stat"><span class="stat-label">{{t $L "card.avg_latency"}}</span><span class="stat-value">{{.AvgLatencyMs}} ms</span></div>
+    </div>
+    {{if .HasChart}}
+    <div class="chart">
+      <div class="chart-label">{{t $L "card.traffic_24h"}}</div>
+      <div class="chart-bar">{{range .ChartQueries}}<span class="bar" style="height:{{.H}}%" title="{{.Title}}"></span>{{end}}</div>
+      <div class="chart-bar red">{{range .ChartBlocked}}<span class="bar" style="height:{{.H}}%" title="{{.Title}}"></span>{{end}}</div>
+    </div>
+    {{end}}
+    <form class="prot" hx-post="/actions/protection" hx-target="#toast" hx-swap="innerHTML">
+      <input type="hidden" name="server_key" value="{{.Key}}">
+      {{if .ProtectionOn}}
+        <button class="btn danger" name="protection_action" value="disable">{{t $L "card.disable"}}</button>
+        <span class="pause-group">
+          <button class="btn warn" name="protection_action" value="disable_time">{{t $L "card.pause"}}</button>
+          <select name="duration">
+            <option value="1">1 {{t $L "card.min"}}</option>
+            <option value="10">10 {{t $L "card.min"}}</option>
+            <option value="30">30 {{t $L "card.min"}}</option>
+            <option value="60">1 {{t $L "card.hour"}}</option>
+          </select>
+        </span>
+      {{else}}
+        <button class="btn on" name="protection_action" value="enable">{{t $L "card.enable"}}</button>
+      {{end}}
+    </form>
+    <details class="wl">
+      <summary>{{t $L "card.whitelist_editor"}} ({{.RuleCount}})</summary>
+      <form hx-post="/actions/whitelist" hx-target="#toast" hx-swap="innerHTML" hx-confirm="{{t $L "card.confirm_whitelist"}}">
+        <input type="hidden" name="server_key" value="{{.Key}}">
+        <div class="muted small">{{t $L "card.one_domain_per_line"}}</div>
+        <textarea name="whitelist_data" rows="8" spellcheck="false">{{.DomainText}}</textarea>
+        <button class="btn on" type="submit">{{t $L "card.save_changes"}}</button>
+      </form>
+    </details>
+  </div>
+</div>
+{{end}}{{end}}
